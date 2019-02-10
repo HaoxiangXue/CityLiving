@@ -1,0 +1,78 @@
+---
+title: "data_vignette"
+author: "Xue_Haoxiang"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{data_vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r, message = FALSE}
+library(CityLiving)
+```
+
+    
+
+# Datasets in this package
+    
+
+This vignette presents brief introduction of the four datasets in this package.
+    
+    
+### teleportdata
+    
+```{r}
+head(teleportdata)
+```
+    
+The dataset called `teleportdata` is from Teleport. Teleport is an online database of location specific life quality information. Teleport, Inc was founded in April 2014 by Sten Tamkivi, Silver Keskkula and Balaji Srinivasan. Teleport claims that they’re building the largest and most up-to-date quality of life database, with more than 300 different data dimensions from more than 70 different sources. The databases are all updated periodically. Teleport does not provide first-handed data, but collects and tidy data from sources include the World Bank, World Health Organization, United Nations, Reporters Without Borders, OpenStreetMap, GeoNames, OpenFlights, Heritage Foundation, AngelList, Airbnb, Seed-DB and others. On top of these Teleport augment the sets with things like laws and regulations, real estate prices and recruitment market data from local sources from countries around the world. This dataset has 264 rows, and 18 columns. The function `teleport` can be used to obtain this dataset.
+    
+    
+### numbeodata
+    
+```{r}
+head(numbeodata)
+```
+    
+This dataset is built based on the information on Numbeo. Numbeo is the world’s largest database of user contributed data about cities and countries worldwide. Numbeo was founded in April 2009 by Mladen Adamovic. Originally it was a website for crowd-sourced price comparison, but later in 2011 it started to collect data about crime, pollution, health care, and traffic. Numbeo provides a tool to see, share and compare information about cost of living worldwide. It contains 4,914,799 prices in 8,706 cities entered by 402,356 contributors (until Dec. 8th, 2018). The indicators include Cost of Living, Property Prices, Crime, Health Care, Pollution, Traffic, Quality of life and Travel. Under every indicator, people can look up the major cities index on the map, make comparisons between two cities, find the current and historical indices, and check the heat map and tables by country. 
+The `numbeodata` has 437 rows and 28 columns. The function `numbeo` can be used to obtain the data. The `numbeo` function also tidy the raw data into a dataset as the numbeodata which can be calculated and summarised. 
+    
+    
+### fulldata
+    
+```{r}
+head(fulldata)
+```
+    
+The `fulldata` dataset combines the datasets above, and gathers all the information into one dataset. Since it keeps all the information which may useful, it may includes some same observations or missing values. It has 514 rows and 45 columns, and users can get more information of each variables with "?fulldata" in the console.
+    
+    
+### simpledata
+    
+```{r}
+head(simpledata)
+```
+    
+    
+This dataset provides various of indicators which measure the life quality in cities all over the world. It has the same variables with the `fulldata` dataset, but excludes all of the missing values. it has 194 rows and 45 columns. Users can get more information of each variables with "?simpledata" in the console. The functions for summary in this package are mostly based on this dataset.
+
+
+
+
+
+
+
+
+
+
+
+

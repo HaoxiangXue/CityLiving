@@ -1,0 +1,193 @@
+---
+title: "test2"
+author: "Xue_Haoxiang"
+date: "2018 M12 14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(httr)
+library(jsonlite)
+library(dplyr)
+library(Hmisc)
+library(rvest)
+library(xml2)
+library(stringr)
+```
+
+
+```{r}
+# teleport() function
+# teleport(city) returns teleport_city_list
+# teleport(beijing) returns scores for this city
+# teleport(all) returns scores for all cities
+
+teleport <- function(x = "city"){
+    tele_city_list <- GET("https://developers.teleport.org/assets/urban_areas.json") %>%
+    content() %>%
+    toJSON() %>%
+    fromJSON() %>%
+    as.data.frame() %>%
+    t()
+    rownames(tele_city_list) <- NULL
+    tele_city_list_2 <- capitalize(tele_city_list)
+  if (x == "city"){
+    x <- tele_city_list
+    x
+  } else if (x %in% tele_city_list_2) {
+    city <- tolower(x) 
+    x <- GET(paste("https://api.teleport.org/api/urban_areas/slug:", city, "/scores/", sep = "")) %>%
+         content() %>%
+         toJSON() %>%
+         fromJSON() 
+    x <- x$categories %>%
+      select(name, score_out_of_10)
+    x$name <- as.character(x$name)
+    x$score_out_of_10 <- as.numeric(as.character(x$score_out_of_10))
+    x
+  } else if (x == "all"){
+    x <- list()
+    for (i in 1:length(tele_city_list)){
+      x[[i]] <- GET(paste("https://api.teleport.org/api/urban_areas/slug:", tele_city_list[i], "/scores/",
+                          sep = "")) %>%
+                content() %>%
+                toJSON() %>%
+                fromJSON() 
+      x[[i]] <- x[[i]]$categories %>%
+                select(name, score_out_of_10)
+      x[[i]]$name <- as.character(x[[i]]$name)
+      x[[i]]$score_out_of_10 <- as.character(x[[i]]$score_out_of_10)
+    }
+      x <- x %>%
+          lapply(.,t)%>%
+          sapply(unlist) %>%
+          t() 
+      x_indicator <- x[1, seq(1,ncol(x)-1, 2)]
+      x <- x[, seq(2, ncol(x), 2)] %>%
+           as.data.frame()
+      colnames(x) <- x_indicator
+      for (i in 1:ncol(x)){
+        x[, i] <- as.numeric(as.character(x[, i]))
+      }
+      x <- x %>%
+           mutate(City = as.vector(tele_city_list_2)) %>%
+           select(City, Housing:Outdoors)
+      x
+  } else {
+    print("Valid values include 'city' for city list, names of city such as 'Beijing', 'all' for all cities.")
+  }
+}
+
+teleport("all")
+```
+
+```{r}
+# numbeo(cost) returns costs for all cities
+# numbeo(crime) returns crime data for all cities
+# numbeo(quality) returns life quality data for all cities
+
+
+numbeo <- function(x = "cost") {
+    cost <- read_html("https://www.numbeo.com/cost-of-living/rankings_current.jsp") %>%
+       html_nodes(xpath = "//*[@id='t2']") %>%
+       html_table() %>%
+       as.data.frame() %>%
+       select(-Rank)
+    city <- str_extract(cost$City, "^[A-Z][ |a-z|A-Z]*") %>%
+          str_replace_all(" ", "-")
+    cost$City <- city
+    if (x == "cost") {
+    x <- cost
+    x
+  } else if (x == "crime"){
+    x <- list()
+    for (i in 1:length(city)){
+      x[[i]] <- read_html(paste("https://www.numbeo.com/crime/in/", city[[i]], sep = "")) %>%
+                html_nodes(xpath = "/html/body/div/table[1]") %>%
+                html_table() 
+    }
+    x_indicator <- as.vector(x[[1]][[1]]$X1)
+    x_indicator <- c("City", x_indicator)
+    x_value <- x %>%
+               sapply(unlist) %>%
+               do.call(rbind,.)%>%
+               as.data.frame %>%
+               select(X31:X313)
+    x_sub <- vector()
+    for ( i in 1: length(x)) {
+    x_sub[i] <- length(x[[i]]) !=0
+    }
+    crime_city <- city[x_sub]
+    x <- cbind(crime_city, x_value)
+    colnames(x) <- x_indicator
+    x
+  } else if (x == "quality") {
+    x <- list()
+    for (i in 1:length(city)){
+    x[[i]] <- read_html(paste("https://www.numbeo.com/quality-of-life/in/", cities[[i]], sep = "")) %>%
+              html_nodes(xpath = "/html/body/div/table") %>%
+              html_table() 
+}
+    x_indicator <- as.vector(x[[1]][[1]]$X1)
+    x_indicator <- c("City", x_indicator)
+    x_value <- x %>%
+               sapply(unlist) %>%
+               do.call(rbind,.)%>%
+               as.data.frame %>%
+               select(X21:X210)
+
+    x_sub <- vector()
+    for ( i in 1: length(x)) {
+    x_sub[i] <- length(x[[i]]) !=0
+    }
+    qua_city <- city[x_sub]
+    x <- cbind(qua_city, x_value)
+    colnames(x) <- x_indicator
+    x <- x %>%
+         select(-10) %>%
+         select(1:9, Weighted_Quality = 10)
+    x
+  } else {
+    print("Valid values include 'cost', 'crime', and 'quality'.")
+  }
+}
+
+numbeo("quality")
+```
+
+```{r}
+# summary
+score <- function(x = "all") {
+  teleport_mean <- city_index %>%
+    select(Housing:Outdoors) %>%
+    rowMeans() %>%
+    round(digits = 2) 
+  index_mean <- as.data.frame(city_index$City) %>%
+    mutate(teleport_mean)
+  colnames(index_mean) <- c("City", "index_mean")
+  index_mean <- unique(arrange(index_mean, desc(index_mean))) 
+  if (x == "all") {
+    barplot(index_mean$index_mean[1:5], main = "Top 5 Livable cities", names.arg = index_mean$City[1:5], col = "blue", ylab = "score out of 10")
+  } else if (x %in% city_index$City){
+    barplot(as.matrix(city_index[which(city_index$City == x), 2:8]), main = paste("scores out of 10 of ", x, sep = ""))
+  } else
+    print("Valide input include 'all', and cities such as 'Tokyo'.")
+}
+
+score("Tokyo")
+
+```
+
+```{r}
+CityLiving::numbeo("cost")
+```
+
+```{r}
+simpledata
+```
+
+

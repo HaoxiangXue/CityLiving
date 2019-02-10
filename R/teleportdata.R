@@ -1,0 +1,28 @@
+#' The dataset of city data from teleport
+#'
+#' This data provides various of indicators which measure the life quality in cities all over the world.
+#' It includes no missing values.
+#'
+#' @format A data.frame with 264 rows and 18 columns.
+#' \describe{
+#'   \item{City}{Cities}
+#'   \item{Housing}{Score out of 10}
+#'   \item{Cost of Living}{Score out of 10}
+#'   \item{Startups}{Score out of 10}
+#'   \item{Venture Capital}{Score out of 10}
+#'   \item{Travel Connectivity}{Score out of 10}
+#'   \item{Commute}{Score out of 10}
+#'   \item{Business Freedom}{Score out of 10}
+#'   \item{Safety}{Score out of 10}
+#'   \item{Healthcare}{Score out of 10}
+#'   \item{Education}{Score out of 10}
+#'   \item{Environment Quality}{Score out of 10}
+#'   \item{Economy}{Score out of 10}
+#'   \item{Taxation}{Score out of 10}
+#'   \item{Internet Access}{Score out of 10}
+#'   \item{Leisure & culture}{Score out of 10}
+#'   \item{Tolerance}{Score out of 10}
+#'   \item{Outdoors}{Score out of 10}
+#' }
+#' @source  \url{https://www.teleport.com}
+"teleportdata"

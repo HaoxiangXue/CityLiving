@@ -1,0 +1,193 @@
+---
+title: "hw06"
+author: "Xue_Haoxiang"
+date: "2018 M10 26"
+output:
+  html_document:
+    keep_md: yes
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(fig.path="images/",
+               cache.path="cache/",
+               echo = FALSE,
+               message = FALSE,
+               warning = FALSE
+)
+library(knitr)
+library(purrr)
+library(dplyr)
+```
+
+# 1. Words in Ulysses
+  
+```{r, echo = FALSE, include = FALSE}
+# Install and load the package `gutenbergr`. 
+# install.packages("gutenbergr")
+library(gutenbergr)
+# Let's get the book "Ulysses" by James Joyce
+gutenberg_works(author == "Joyce, James")
+book <- gutenberg_download(4300)
+book
+
+# Install and load the package `tidytext`. 
+# install.packages(tidytext)
+library(tidytext)
+library(tidyverse)
+library(dplyr)
+# Now let's get the words in the text
+words <- book %>%
+  unnest_tokens(word, text) %>%
+  select(word)
+words
+```
+  
+### a) 
+
+```{r}
+words_z <- unique(words$word) %>%
+  str_subset("z")
+number_z <- str_count(words_z, "z")
+table(number_z)
+
+```
+This table shows the number of z's in each word.
+  
+```{r}
+library(rebus)
+two_z <- unique(words_z[number_z >= 2])
+zz <- str_match(two_z, "z.*z")
+two_z[which.max(str_length(zz))]
+```
+The distance between two z's in the word "sz?zharminczbroj?guly?s" is the largest.
+
+### b)
+
+```{r}
+vowels <- char_class("aeiouAEIOU")
+words_uni <- unique(words$word)
+words_vowel <- str_subset(words_uni, pattern = "^[aeiouAEIOU].*[aeiouAEIOU]$")
+length(words_vowel)
+words_vowel_2 <- str_subset(words_uni, pattern = "^[aeiouAEIOU]{2,}.*")
+length(words_vowel_2)
+words_uni[which.max(nchar(str_match(words_uni, "[aeiouAEIOU]{1,}")))]
+```
+According to the results, 876 words start and end with a vowel. \n
+341 words start with two or more vowels. \n
+The word "frseeeeeeeeeeeeeeeeeeeefrong" has the most consecutive vowels.
+
+### c)
+
+```{r}
+words_right_1 <- words_uni %>%
+  str_subset(., "cei")
+words_right_2 <- words_uni %>%
+  str_subset(., "[^c]ie")
+words_all <- words_uni %>%
+  str_subset(., "(ei|ie)")
+rule_pct <- (length(words_right_1) + length(words_right_2)) / length(words_all)
+rule <- round(c(rule_pct, 1- rule_pct), digits = 3)
+names(rule) <- c("true rate", "false rate")
+rule
+```
+The proportion of words which contain "cei" or "ie" without "c" in all the words which contain "ei" or "ie" is 78.6%, where the rule holds. 21.4% of the words don't obey the rules. Besides, I consider it obeys the rule as long as it contains "cei" or "[^c]ie", so words which both countain "ei" and "ie" are considered holding the rule. 
+  
+  
+  
+# 2. MTA Delays
+
+### a)
+```{r}
+g <- readRDS("mta.RDS")
+```
+
+```{r}
+g1 <- g %>%
+  filter(is_retweet == FALSE) %>%
+  subset(str_detect(g$text, "^[^@].*") == TRUE) %>%
+  select(text, created_at)
+head(g1)
+```
+
+### b)
+
+```{r}
+patt_1 <- grep("^.*[Dd][Ee][Ll][Aa][Yy].*", g1$text)
+g2 <- g1[patt_1, ]
+patt_2 <- grep("^.*[Rr]esume.*", g2$text)
+g3 <- g2[-patt_2, ]
+patt_3 <- grep("^.*[Uu][Pp][Dd][Aa][Tt][Ee].*", g3$text)
+g4 <- g3[-patt_3, ]
+head(g4, 10)
+```
+  
+I select all the tweets which include the word "delay" either in lowercase or in uppercase but don't include words "resume" or "update" either in lowercase or in uppercase.
+
+```{r}
+delay_all <- str_split(g4$created_at, " ", n = 2, simplify = TRUE)
+delay_time <- str_split(delay_all[, 2] , ":", simplify = TRUE)
+library(purrr)
+dates <- delay_all[, 1] %>%
+  map(as.Date) %>%
+  map(weekdays) 
+
+delay_hour <- delay_time[,1]
+delay_hour1 <- str_replace(delay_hour, "06|07|08|09", "morning")
+delay_hour1 <- str_replace(delay_hour1, "10|11|12|13|14", "mid_day")
+delay_hour1 <- str_replace(delay_hour1, "15|16|17", "afternoon")
+delay_hour1 <- str_replace(delay_hour1, "18|19|20|21", "evening")
+delay_hour1 <- str_replace(delay_hour1, "22|23|24|00|01|02|03|04|05", "night")
+
+table(as.character(dates), as.character(delay_hour1))
+```
+  
+According to the table, we could find out that trains delay more often in mid_day, evening, and night. \n
+Besides, delays on weekend's morning occur more than on weekday's moring, and from mid_day to evening, delay occurs more on weekdays than on weekends.
+  
+### c)
+
+```{r}
+patt_length <- grep("^.*signal.*", g4$text)
+signal <- length(patt_length)
+patt_passenger <- grep("^.*passenger.*", g4$text)
+passenger <- length(patt_passenger)
+patt_mechan <- grep("^.*mechan.*", g4$text)
+mechan <- length(patt_mechan)
+patt_switch <- grep("^.*switch.*", g4$text)
+switch <- length(patt_switch)
+patt_track <- grep("^.*track.*", g4$text)
+track <- length(patt_track)
+delay_type <- cbind(signal, passenger, mechan, switch, track) %>%
+  sort(., decreasing = TRUE)
+names(delay_type) <- c("signal", "mechanical", "passenger", "track", "switch")
+delay_type
+barplot(delay_type, main = "types of delay")
+```
+
+### d)
+
+```{r}
+g5 <- str_extract_all(g4$text, "( |^)[1-7|A-G|J|L-N|Q-S|W-Z](,| )")
+g6 <- str_extract_all(g5, "[1-7|A-G|J|L-N|Q-S|W-Z]")
+g7 <- g6 %>%
+  map(~unique(.)) 
+delay_day <- str_replace(dates, "Monday|Tuesday|Wednesday|Thursday|Friday", "weekday")
+delay_day <- str_replace(delay_day, "Saturday|Sunday", "weekend")
+delay_sum <- cbind(g7, delay_day)
+g8 <- g7[which(delay_day == "weekday")]
+g9 <- g7[which(delay_day == "weekend")]
+
+
+sum_line_1 <- data.frame(table(unlist(g8)))
+sum_line_2 <- data.frame(table(unlist(g9)))
+names(sum_line_1) <- c("line", "weekday")
+names(sum_line_2) <- c("line", "weekend")
+sum_line <- full_join(sum_line_1, sum_line_2, by = "line")
+sum_line <- with(sum_line, cbind(sum_line, weekday_proportion = weekday / (weekend + weekday))) 
+sum_line <- arrange(sum_line, desc(weekday_proportion))
+sum_line
+```
+According to the table, line B, line W and line M mostly delay on weekdays. While comparing to other subway lines, lind L, line S and line Z delay more on weekends. If we consider delay in weekday is more often if weekday delays take up more than 5/7 of total delays, then only line S and line Z probably delay more on weekends.
+

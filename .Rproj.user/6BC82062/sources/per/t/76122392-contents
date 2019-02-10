@@ -1,0 +1,160 @@
+---
+title: "functions_vignette"
+author: "Xue_Haoxiang"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{functions_vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# City Living Index
+    
+
+This vignette covers all the functions in the CityLiving package.
+    
+The functions can be divided into two categories. The first category is obtaining data. The dataset in this package are collected from [Teleport](https://www.teleport.com) and [Numbeo](https://www.numbeo.com). The `teleport` and `numbeo` functions can be used to get the relevant data from the websites. Moreover, the `costsummary` function obtains a brief summary and tidy the text into a data.frame. The second category offers functions to briefly summary the datasets, and provide some descriptive statistics. Functions include `score`, `quality`, and `citysummary`.  
+    
+    
+```{r, message=FALSE}
+library(CityLiving)
+```
+    
+    
+## Obtaining functions
+    
+### teleport
+    
+    
+The `teleport` function allows three kinds of input. 
+    
+
+If you input "city", this function returns the list of all the cities on this website. It is ordered by the first letter of the city, so that you can check whether the city is included.
+    
+```{r}
+head(teleport("city"))
+```
+    
+If you input any city name to this function, such as "Tokyo", the function returns a data.frame with all of the scores calculated by the teleport website, range 0 to 10. The "name" column presents the indicators, while the "score_out_of_10" column presents the scores of this city.
+    
+```{r}
+teleport("Tokyo")
+```
+    
+If you input "all", this function returns a data.frame including the 17 indicators of the 264 cities (so far) all over the world. This function obtains data directly from the website so it is real-time updated, but it may takes 30 seconds to obtain and present the result. The first column present the names of each city, while all the other columns present the scores out of 10. You can make any analysis with this data.frame later.
+    
+```{r}
+teleport("all")
+```
+    
+It is worth mentioning that if your input does match any of the types above, this function will return words as "Valid values include 'city' for city list, names of city such as 'Beijing', 'all' for all cities.", and you need to correct your input.
+
+```{r}
+teleport("tokyo")
+```
+    
+    
+
+### numbeo
+    
+    
+This function obtains the index data from [Numbeo](https://www.numbeo.com/)
+    
+
+The `numbeo` function allows three kinds of input. 
+
+
+If you input "cost", this function returns the data.frame which includes the indicator about costs in differnet fields of each city. The data.frame has 447 cities and 6 indicators (so far). All of the indicators takes New York City as a base, with a value of 100, and indicates the proportion to NYC.
+    
+```{r}
+numbeo("cost")
+```
+    
+If you input "crime", this function returns the data.frame which includes the indicator about crime rate  of each city. The data.frame has 425 cities and 13 indicators (so far). Since it obtains data iteratively from the website, it may takes 1-2 minutes to present the result, and all of the values are updated in real time.
+    
+If you input "quality", this function returns the data.frame which includes the indicator about Life Quality Index in various of fields of each city. The data.frame has 426 cities and 9 indicators. Since it obtains data iteratively from the website, it may takes 1-2 minutes to present the result, and all of the values are updated in real time.
+    
+    
+### costsummary
+    
+This function collects the brief summary and tidy it into a table. It obtains the index data from [Numbeo](https://www.numbeo.com/). The input is the city name. The four-person-cost and the single-person-cost are both calculated current dollar expense per month. The Rank indicates the ranking of this city in percentage.
+    
+```{r}
+costsummary("Tokyo")
+```
+    
+    
+    
+## Summary functions
+    
+    
+This package offers 3 functions to provide brief descriptive statistics of the datasets in this package. Users can do any further analysis with the datasets. The detailed introductions of the datasets in this package can be found in the other vignette. 
+    
+    
+### score 
+    
+The `score` function returns a barplot to present the scores of each city, or the top 5 cities with highest mean score. If you intend to check the scores of a single city, just input the name of the city as follows:
+```{r}
+score("Beijing")
+```
+    
+If you intend to look up the top 5 livable cities with the scores calculated by teleport, you can input "all" as follows:
+```{r}
+score("all")
+```
+It will presents the top 5 cities with the highest average scores.
+    
+If you input any invalid words, the function will return "Valid input includes 'all', and city name such as 'Tokyo'." to remind you.    
+    
+    
+### quality 
+
+The `quality` function accepts 2 types of inputs: any city name, or "all".
+    
+If you input any valid city name, this function returns a list which includes a table which presents the indices of this city, with 7 variables, as well as a plot based on the values.
+```{r}
+quality("Beijing")
+```
+    
+    
+If you input "all", this function returns a list which includes a table which presents the top 5 cities with highest Weighted_Quality, and a plot based on the values.
+```{r}
+quality("all")
+```
+    
+### citysummary
+    
+    
+This function presents the descriptive statistics information of the datasets. It presents valid observation size, mean, standard error, median, minimum, maximum, skew, and kurtosis of each variable.
+This function only works for the datasets included in this package, so users can input simpledata, fulldata, teleportdata, or numbeodata.
+    
+```{r}
+citysummary(fulldata)
+```
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

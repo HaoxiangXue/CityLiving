@@ -1,0 +1,330 @@
+---
+title: "final_project_test"
+author: "Xue_Haoxiang"
+date: "2018 M11 30"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message=FALSE}
+library(httr)
+library(jsonlite)
+library(dplyr)
+library(Hmisc)
+library(rvest)
+library(xml2)
+library(stringr)
+```
+
+
+```{r}
+# teleport dataset
+cities <- GET("https://developers.teleport.org/assets/urban_areas.json")
+cities_list <- content(cities) %>%
+  toJSON() %>%
+  fromJSON() 
+cities_list <- t(as.data.frame(cities_list))
+rownames(cities_list) <- NULL
+
+teleport_1 <- list()
+teleport_data <- list()
+for (i in 1:length(cities_list)){
+  teleport_1[[i]] <- GET(paste("https://api.teleport.org/api/urban_areas/slug:", cities_list[i], "/scores/", sep = ""))
+  teleport_data[[i]] <- content(teleport_1[[i]]) %>%
+  toJSON() %>%
+  fromJSON() 
+  teleport_data[[i]] <- teleport_data[[i]]$categories %>%
+    select(name, score_out_of_10)
+  teleport_data[[i]]$name <- as.character(teleport_data[[i]]$name)
+  teleport_data[[i]]$score_out_of_10 <- as.character(teleport_data[[i]]$score_out_of_10)
+}
+teleport_final <- teleport_data %>%
+  lapply(.,t)%>%
+  sapply(unlist) %>%
+  t() 
+teleport_indicator <- teleport_final[1, seq(1,ncol(teleport_final)-1, 2)]
+teleport_value <- teleport_final[, seq(2,ncol(teleport_final), 2)] %>%
+  as.data.frame()
+colnames(teleport_value) <- teleport_indicator
+      for (i in 1:ncol(teleport_value)){
+        teleport_value[, i] <- as.numeric(as.character(teleport_value[, i]))
+      }
+
+library(Hmisc)
+cities_list_2 <- capitalize(cities_list)
+teleportdata <- teleport_value %>%
+  mutate(City = as.vector(cities_list_2)) %>%
+  select(City, Housing:Outdoors)
+
+save(teleportdata, file = "teleportdata.Rda")
+```
+
+
+
+
+```{r, eval=FALSE}
+library(rvest)
+library(xml2)
+brief_sum <- read_html("https://www.numbeo.com/cost-of-living/in/Tokyo")
+info <- html_nodes(brief_sum, xpath = "/html/body/div[1]/div[4]/ul")
+info_tidy <- html_text(info)
+info_tidy
+info_value <- str_extract_all(info_tidy, " [0-9|,|.]+")
+info_value2 <- info_value %>%
+  unlist %>%
+  as.data.frame()
+info_value2
+info_value3 <- data.frame(Four_Person_Cost = info_value2[1, 1], Single_Person_Cost = info_value2[2, 1], Rank = as.numeric(as.character(info_value2[4,1])) / as.numeric(as.character(info_value2 [5, 1])))
+info_value3
+```
+
+
+```{r, eval=FALSE}
+library(Hmisc)
+library(rvest)
+library(xml2)
+cities_list_2 <- capitalize(cities_list)
+num_cost <- list()
+num_sum <- list()
+for (i in 1:length(cities_list)){
+  num_cost[[i]] <- read_html(paste("https://www.numbeo.com/cost-of-living/in/", cities_list_2[i], sep = ""))
+  num_sum[[i]] <- html_nodes(num_cost[[i]], xpath = "/html/body/div[1]/div[4]/ul/li[1]/span") %>%
+    html_text() 
+}
+
+num_sum2 <- num_sum %>%
+  as.character() %>%
+  as.data.frame() 
+colnames(num_sum2) <- "Four-person monthly costs"
+numbeo <- teleport_value_2 %>%
+  cbind(num_sum2)
+
+```
+
+
+```{r}
+# Cost of living
+num_index <- read_html("https://www.numbeo.com/cost-of-living/rankings_current.jsp")
+num_index <- html_nodes(num_index, xpath = "//*[@id='t2']")
+costs_data <- html_table(num_index)
+costs_data <- costs_data %>%
+  as.data.frame() %>%
+  select(-Rank)
+
+cities <- str_extract(costs_data$City, "^[A-Z][ |a-z|A-Z]*")
+cities <- str_replace_all(cities, " ", "-")
+costs_data$City <- cities
+
+```
+
+
+
+
+```{r}
+# crime data
+num_crime <- list()
+crime_sum <- list()
+for (i in 1:length(cities)){
+  num_crime[[i]] <- read_html(paste("https://www.numbeo.com/crime/in/", cities[[i]], sep = ""))
+  crime_sum[[i]] <- html_nodes(num_crime[[i]], xpath = "/html/body/div/table[1]") %>%
+    html_table() 
+}
+
+crime_indicator <- as.vector(crime_sum[[1]][[1]]$X1)
+crime_indicator <- c("City", crime_indicator)
+
+crime_value <- crime_sum %>%
+  sapply(unlist) %>%
+  do.call(rbind,.)%>%
+  as.data.frame %>%
+  select(X31:X313)
+
+crime_sub <- vector()
+for ( i in 1: length(crime_sum)) {
+  crime_sub[i] <- length(crime_sum[[i]]) !=0
+}
+crime_city <- cities[crime_sub]
+crime_data <- cbind(crime_city, crime_value)
+colnames(crime_data) <- crime_indicator
+```
+
+```{r}
+# quality of living
+num_qua <- list()
+qua_sum <- list()
+for (i in 1:length(cities)){
+  num_qua[[i]] <- read_html(paste("https://www.numbeo.com/quality-of-life/in/", cities[[i]], sep = ""))
+  qua_sum[[i]] <- html_nodes(num_qua[[i]], xpath = "/html/body/div/table") %>%
+    html_table() 
+}
+
+qua_indicator <- as.vector(qua_sum[[1]][[1]]$X1)
+qua_indicator <- c("City", qua_indicator)
+
+qua_value <- qua_sum %>%
+  sapply(unlist) %>%
+  do.call(rbind,.)%>%
+  as.data.frame %>%
+  select(X21:X210)
+
+qua_sub <- vector()
+for ( i in 1: length(qua_sum)) {
+  qua_sub[i] <- length(qua_sum[[i]]) !=0
+}
+qua_city <- cities[qua_sub]
+qua_data <- cbind(qua_city, qua_value)
+colnames(qua_data) <- qua_indicator
+qua_data <- qua_data %>%
+  select(-10) %>%
+  select(1:9, Weighted_Quality = 10)
+library(purrr)
+
+```
+
+```{r}
+# Numbeo
+
+numbeodata <- costs_data %>%
+  inner_join(crime_data) %>% 
+  inner_join(qua_data, by = "City")%>%
+  select(-25)
+numbeodata <- map(numbeodata[, 2:ncol(numbeodata)], ~as.numeric(as.character(.))) %>%
+  as.data.frame()%>%
+  mutate(City = numbeodata$City) %>%
+  select(City, Cost.of.Living.Index:Weighted_Quality)
+save(numbeodata, file = "numbeodata.Rda")
+```
+
+
+
+
+```{r}
+# teleport + numbeo
+simpledata <-  teleportdata %>%
+  inner_join(numbeodata, by = "City")
+fulldata <- teleportdata %>%
+  full_join(numbeodata, by = "City")
+
+save(simpledata, file = "simpledata.Rda")
+save(fulldata, file = "fulldata.Rda")
+```
+
+
+```{r, eval=FALSE}
+crime <- read_html("https://www.numbeo.com/crime/in/Arhus")
+crime_info <- html_nodes(crime, xpath = "/html/body/div/table[1]")
+crime_rank <- html_table(crime_info)
+crime_rank
+```
+
+
+
+```{r}
+library(psych)
+describe(simpledata[, 2:45])
+```
+
+```{r}
+quality <- function(x = "all") {
+  if (x == "all"){
+    x <- simpledata %>%
+      select(City, Weighted_Quality) %>%
+      arrange(desc(Weighted_Quality))
+    table1 <- head(x, 5)
+    plot1 <- barplot(x$Weighted_Quality[1:5], main = "Top 5 Quality Index cities", names.arg = x$City[1:5], col = "blue")
+    result <- list(table1, plot1)
+    result
+  } else if (x %in% simpledata$City) {
+    table1 <- simpledata %>%
+      select(City, Purchasing.Power.Index:Pollution.Index)
+    table2 <- table1[which(simpledata$City == x), ]
+    matrix <- table2 %>%
+      select(-City) %>%
+      as.matrix()
+    plot2 <- barplot(matrix, main = paste("Indices of ", x, sep = ""), names.arg = c("Power use", "Safety", "Health", "Climate", "Property", "Traffic", "Pollution"))
+    result <- list(table2, plot2)
+    result
+  } else {
+    print("Valid input includes 'all', and city name such as 'Tokyo'.")
+  } 
+}
+
+quality("Beijing")
+```
+
+```{r}
+quality("all")
+```
+
+```{r}
+beijing <- simpledata %>%
+      select(City, Purchasing.Power.Index:Pollution.Index)
+table2 <- beijing[which(simpledata$City == "Beijing"), ]
+matrix <- table2 %>%
+      select(-City) %>%
+      apply(., 1, function(x) x/20)%>%
+      as.numeric() %>%
+      t()
+plot2 <- data.frame(matrix) %>%
+  as.numeric()
+colnames(plot2) <- colnames(table2)[2:8]    
+library(fmsb)
+radarchart(plot2, axistype = 0, centerzero = TRUE)
+```
+
+Vignettes are long form documentation commonly included in packages. Because they are part of the distribution of the package, they need to be as compact as possible. The `html_vignette` output type provides a custom style sheet (and tweaks some options) to ensure that the resulting html is as small as possible. The `html_vignette` format:
+
+- Never uses retina figures
+- Has a smaller default figure size
+- Uses a custom CSS stylesheet instead of the default Twitter Bootstrap style
+
+## Vignette Info
+
+Note the various macros within the `vignette` section of the metadata block above. These are required in order to instruct R how to build the vignette. Note that you should change the `title` field and the `\VignetteIndexEntry` to match the title of your vignette.
+
+## Styles
+
+The `html_vignette` template includes a basic CSS theme. To override this theme you can specify your own CSS in the document metadata as follows:
+
+    output: 
+      rmarkdown::html_vignette:
+        css: mystyles.css
+
+## Figures
+
+The figure sizes have been customised so that you can easily put two images side-by-side. 
+
+```{r, fig.show='hold'}
+plot(1:10)
+plot(10:1)
+```
+
+You can enable figure captions by `fig_caption: yes` in YAML:
+
+    output:
+      rmarkdown::html_vignette:
+        fig_caption: yes
+
+Then you can use the chunk option `fig.cap = "Your figure caption."` in **knitr**.
+
+## More Examples
+
+You can write math expressions, e.g. $Y = X\beta + \epsilon$, footnotes^[A footnote here.], and tables, e.g. using `knitr::kable()`.
+
+```{r, echo=FALSE, results='asis'}
+knitr::kable(head(mtcars, 10))
+```
+
+Also a quote using `>`:
+
+> "He who gives up [code] safety for [code] speed deserves neither."
+([via](https://twitter.com/hadleywickham/status/504368538874703872))
+
+
+```{r}
+citysummary(teleportdata)
+```
+

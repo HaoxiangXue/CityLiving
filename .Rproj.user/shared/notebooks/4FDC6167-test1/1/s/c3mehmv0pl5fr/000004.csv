@@ -1,0 +1,7 @@
+"0","# teleport + numbeo"
+"0","simpledata <-  teleportdata %>%"
+"0","  inner_join(numbeodata, by = ""City"")"
+"0","fulldata <- teleportdata %>%"
+"0","  full_join(numbeodata, by = ""City"")"
+"0","save(simpledata, file = ""simpledata.Rda"")"
+"0","save(fulldata, file = ""fulldata.Rda"")"

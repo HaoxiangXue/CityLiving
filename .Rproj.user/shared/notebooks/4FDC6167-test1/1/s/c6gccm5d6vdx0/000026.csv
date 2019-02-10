@@ -1,0 +1,5 @@
+"0","colnames(plot2) <- colnames(table2)[2:8]    
+"
+"2","Error in `colnames<-`(`*tmp*`, value = c(""Purchasing.Power.Index"", ""Safety.Index"",  : 
+  attempt to set 'colnames' on an object with less than two dimensions
+"

@@ -1,0 +1,2 @@
+"0","info_value3 <- data.frame(Four_Person_Cost = info_value2[1, 1], Single_Person_Cost = info_value2[2, 1], Rank = as.numeric(as.character(info_value2[4,1])) / as.numeric(as.character(info_value2 [5, 1])))"
+"0","info_value3"

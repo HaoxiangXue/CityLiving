@@ -1,0 +1,20 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1545001479586.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3005576770",
+    "id" : "2A80FBF",
+    "lastKnownWriteTime" : 1544927702,
+    "last_content_update" : 1544927702,
+    "path" : "~/CityLiving/vignettes/data_vignette.Rmd",
+    "project_path" : "vignettes/data_vignette.Rmd",
+    "properties" : {
+    },
+    "relative_order" : 5,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}
